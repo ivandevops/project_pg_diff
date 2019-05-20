@@ -69,28 +69,21 @@ def update_trigger(service):
         rows = db_exe(conn=conn, operate=str_select)
         dict_trigger_online.update({triggername: rows[0][0]})
 
+    trigger_list=[]
     if service == 'public':
-        for triggername in S_public_trigger:
-            if triggername in dict_trigger_online:  # 可以找到，判断内容
-                if dict_trigger[triggername] == dict_trigger_online[triggername]:  # 内容一样，不做变化
-                    pass
-                else:
-                    str = dict_trigger[triggername]
-                    str_r = str.replace('CREATE TRIGGER', 'CREATE OR REPLACE TRIGGER')
-                    db_exe(conn=conn, operate=str_r)  # 内容不一样，重新执行函数创建语句，覆盖之前的含糊
-            else:
-                db_exe(conn=conn, operate=dict_trigger[triggername])  # 模板库的函数在线上找不到，新建
+        trigger_list=S_public_trigger
     if service == 'private':
-        for triggername in S_private_trigger:
-            if triggername in dict_trigger_online:  # 可以找到，判断内容
-                if dict_trigger[triggername] == dict_trigger_online[triggername]:  # 内容一样，不做变化
-                    pass
-                else:
-                    str = dict_trigger[triggername]
-                    str_r = str.replace('CREATE TRIGGER', 'CREATE OR REPLACE TRIGGER')
-                    db_exe(conn=conn, operate=str_r)  # 内容不一样，重新执行函数创建语句，覆盖之前的含糊
+        trigger_list=S_private_trigger
+    for triggername in trigger_list:
+        if triggername in dict_trigger_online:              #可以找到，判断内容
+            if dict_trigger[triggername] == dict_trigger_online[triggername]:  # 内容一样，不做变化
+                pass
             else:
-                db_exe(conn=conn, operate=dict_trigger[triggername])  # 模板库的函数在线上找不到，新建
+                str = dict_trigger[triggername]
+                str_r = str.replace('CREATE TRIGGER', 'CREATE OR REPLACE TRIGGER')
+                db_exe(conn=conn, operate=str_r)  # 内容不一样，重新执行函数创建语句，覆盖之前的含糊
+        else:
+            db_exe(conn=conn, operate=dict_trigger[triggername])  # 模板库的函数在线上找不到，新建
     db_close('db_dev')
 
 
