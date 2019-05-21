@@ -147,11 +147,8 @@ def update_seq(service,conn_db,conn_dev):
 
 
 
-def update_index(service,conn_db,conn_dev):
-    log_index=[]
-    dict_index=show_create_index(conn_db)
-    dict_index_online=dict()
-
+def update_index(service):
+    pass
 
 def update_table(service):
     pass

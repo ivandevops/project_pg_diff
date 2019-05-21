@@ -1,6 +1,4 @@
 from tools.show_temp_list__dict import *
-
-
 def new(os_key,conn_db,conn_dev):
     new_func(S_fuc,conn_db,conn_dev)
     new_seq(S_public_seq,conn_db,conn_dev)
