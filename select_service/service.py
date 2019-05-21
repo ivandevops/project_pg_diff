@@ -1,11 +1,7 @@
 import sys
 sys.path.append("D:\\project_pg_diff\\tools")
 from tools.update import *
-from tools.create_user import *
-def add_user():
-    add()
-def new_user():
-    new()
+
 def online_update():
     update_func()
     update_seq('public')
