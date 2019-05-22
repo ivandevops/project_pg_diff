@@ -18,8 +18,6 @@ def main():
                 pass
         db_close(conn_tmp)
         db_close(conn_online)
-    except getopt.GetoptError:
-        print(sys.argv[0]+' -a <add user>[os_key]  -n <new user>[os_key]  -u<update online> [--private|--public]')
     except:
         print(sys.argv[0] + ' -a <add user>[os_key]  -n <new user>[os_key]  -u<update online> [--private|--public]')
 if __name__ == '__main__':
