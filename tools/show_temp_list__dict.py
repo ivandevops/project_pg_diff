@@ -75,6 +75,7 @@ def show_create_sequence(conn):
     for seqname in dict_seq.keys():
         str_select = "select show_create_sequence( )".split()[0] + ' ' + "select show_create_sequence( )".split()[
             1] + " 'public' " + "," + "'" + seqname + "'" + "select show_create_sequence( )".split()[2]
+        #str_select = "select show_create_sequence( 'public'." + seqname + ")"
         rows = db_exe(conn=conn,operate=str_select)
         dict_seq.update({seqname: rows[0][0]})
     return dict_seq

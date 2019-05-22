@@ -2,6 +2,10 @@ from tools.create_user import *
 import sys,getopt
 sys.path.append("D:\\project_pg_diff\\connect_pg")
 from tools.show_temp_list__dict import *
+
+conn_tmp=""
+conn_online=""
+
 def main():
     try:
         opts,args=getopt.getopt(sys.argv[1:],'a:n:u')
