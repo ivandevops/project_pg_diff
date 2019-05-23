@@ -5,6 +5,14 @@ from diff import conn_tmp , conn_online
 from tools.show_temp_list__dict import *
 sys.path.append("D:\\project_pg_diff\\connect_pg")
 
+
+DROP_OSKEY = False
+DROP_TABLE = False
+DROP_TABLE_COLUMN = False
+DROP_TABLE_CONSTRAINT = False
+DROP_TABLE_REMARK = False
+
+
 def update_func(conn_db,conn_dev):
     log_func=[]
     dict_func_online=dict()
@@ -157,113 +165,189 @@ def update_index(service,conn_tmp,conn_oli):
 
 
 def update_table(service):
-    pass
+    if service == 'public':
+        contrast_oskey("public", 0)
+    elif service == 'private':
+        contrast_custom(3, 0, None, 1, 2)  # 知鱼用户
+        contrast_custom(3, 0, None, 1, 2)  # max 用户
+    contrast_oskey()
 
 
-def contrast_database():
-    contrast_oskey("public",0)
-    contrast_custom(3, 0, None, 1, 2)  # 知鱼用户
-    contrast_custom(3, 0, None, 1, 2)  # max 用户
+# 对比线上库是否，存在dataos中没有的oskey
+def contrast_oskey():
+    oskey_dataos_list = select_dataos_oskey(conn_online)
+    oskey_pgtables_list = select_pgtables_oskey()
+    for oskey in oskey_dataos_list:
+        if oskey_pgtables_list.index(oskey) > 0:
+            oskey_pgtables_list.pop(oskey)
+    if len(oskey_pgtables_list) > 0:
+        print("线上出现dataos表中没有oskey，是否要删除")
+        if DROP_OSKEY == True:
+            for oskey in oskey_pgtables_list:
+                tablename_pgtables_list = select_tablename(conn_online, oskey)
+                for tablename in tablename_pgtables_list:
+                    drop_table(conn_online, tablename)
 
 
+# 对线上和模版库中不同的客户类型进行处理
 def contrast_custom(oli_type,oli_status,oli_create_time,tmp_is_private,tmp_custom_type):
-    oskey_list=select_oskey(conn_online,oli_type,oli_status,oli_create_time);
-    for oskey in  oskey_list :
-        contrast_oskey(oskey,tmp_is_private,tmp_custom_type)
+    oskey_dataos_list = select_dataos_oskey(conn_online,oli_type,oli_status,oli_create_time)
+    for oskey in oskey_dataos_list :
+        contrast_oskey(oskey, tmp_is_private, tmp_custom_type)
 
 
+# 根据提供的oskey，对每一个表进行对比
 def contrast_oskey(oskey, is_private = None, custom_type = None):
-    tmp_list = select_object(conn_tmp,is_private,3,custom_type)
-    oli_list = select_tablename(conn_online,oskey)
-    for tmp_tablename in tmp_list:
+    tmp_tablename_list = select_object(conn_tmp, is_private, 3, custom_type)
+    oli_tablename_list = select_tablename(conn_online, oskey)
+    for tmp_tablename in tmp_tablename_list:
         if oskey != "public":
             tablename_prefix = tmp_tablename[0:tmp_tablename.find(tmp_tablename.split("_")[-1])]
             oli_tablename = tablename_prefix + oskey
         elif oskey == "public":
             oli_tablename = tmp_tablename
-
-        if oli_list.index(oli_tablename) > 0:
-            contrast_table(tmp_tablename,oli_tablename)
+        if oli_tablename_list.index(oli_tablename) > 0:
+            contrast_table(oskey,tmp_tablename,oli_tablename)
         else:
             print("表不存在，新建表")
+            create_table(tmp_tablename, oli_tablename)
             continue
-        oli_list.pop(oli_tablename)
-    if len(oli_list) > 0:
-        print("线上表多余，是否要删除")
+        oli_tablename_list.pop(oli_tablename)
+    if len(oli_tablename_list) > 0:
+        if DROP_TABLE == True:
+            print("线上表多余，是否要删除")
+            for oli_tablename in oli_tablename:
+                drop_table(conn_online, oli_tablename)
 
 
-def contrast_table(tmp_tablename,oli_tablename):
-    contrast_table_columns(tmp_tablename, oli_tablename)
+# 对比单表
+def contrast_table(tmp_tablename, oli_tablename):
+    contrast_table_column(tmp_tablename, oli_tablename)
     contrast_table_constraint(tmp_tablename, oli_tablename)
-    contrast_table_remarks(tmp_tablename, oli_tablename)
+    contrast_table_remark(tmp_tablename, oli_tablename)
 
-
-def contrast_table_columns(tmp_tablename,oli_tablename):
-    tmp_column_dist = select_table_columns(conn_tmp,tmp_tablename);
-    oli_column_dist = select_table_columns(conn_online,oli_tablename);
+# 对比表字段
+def contrast_table_column(tmp_tablename, oli_tablename):
+    tmp_column_dist = select_create_table_column(conn_tmp, tmp_tablename)
+    oli_column_dist = select_create_table_column(conn_online, oli_tablename)
     for column_name in tmp_column_dist.keys():
         tmp_column = tmp_column_dist.get(column_name)
-        oli_column = oli_column_dist.get(column_name,False)
+        oli_column = oli_column_dist.get(column_name, False)
         if oli_column == False:
             print("字段不存在")
+            alter_table_add_column(conn_online, oli_tablename, tmp_column)
             continue
+        oli_column_dist.pop(column_name)
         if tmp_column.type != oli_column.type:
             print("字段类型不一致")
+            alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+            continue
         if tmp_column.varchar_len != oli_column.varchar_len:
             print("字段varchar_len不一致")
+            alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+            continue
         if tmp_column.double_len != oli_column.double_len:
             print("字段double_len不一致")
+            alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+            continue
         if tmp_column.collate != oli_column.collate:
             print("字段collate不一致")
+            alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+            continue
         if tmp_column.is_nullable != oli_column.is_nullable:
             print("字段is_nullable不一致")
+            alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+            continue
         if tmp_column.default != oli_column.default:
-            print("字段default不一致")
-        oli_column_dist.pop(column_name)
+            if tmp_column.default.find("nextval") > 0 :
+                tmp_default = update_sequence_name(tmp_column.default, tmp_tablename, oli_tablename)
+                if tmp_default != oli_column.default:
+                    print("字段default不一致")
+                    alter_table_alter_column(conn_online, oli_tablename, tmp_column)
+                    continue
+            else:
+                print("字段default不一致------情况特殊")
+                continue
     if len(oli_column_dist) > 0:
         print("线上字段多余，是否要删除")
+        if DROP_TABLE_COLUMN == True:
+            for column_name in oli_column_dist.keys():
+                oli_column = oli_column_dist.get(column_name)
+                alter_table_drop_remarks(conn_online, oli_tablename, oli_column)
 
-
-def contrast_table_constraint(tmp_tablename,oli_tablename):
-    tmp_constraint_dist = select_table_constraint(conn_tmp,tmp_tablename);
-    oli_constraint_dist = select_table_constraint(conn_online,oli_tablename);
-    for constraint_name in  tmp_constraint_dist.keys():
+# 对比表约束
+def contrast_table_constraint(tmp_tablename, oli_tablename):
+    tmp_constraint_dist = select_create_table_constraint(conn_tmp, tmp_tablename)
+    oli_constraint_dist = select_create_table_constraint(conn_online, oli_tablename)
+    for constraint_name in tmp_constraint_dist.keys():
         tmp_constraint = tmp_constraint_dist.get(constraint_name)
-        oli_constraint = oli_constraint_dist.get(constraint_name,False)
+        oli_constraint = oli_constraint_dist.get(constraint_name, False)
         if oli_constraint == False:
             print("约束不存在")
+            alter_table_add_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
+        oli_constraint_dist.pop(constraint_name)
         if tmp_constraint.ck == oli_constraint.ck:
             print("约束ck不一致")
+            alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
+            continue
         if tmp_constraint.uk == oli_constraint.uk:
             print("约束uk不一致")
+            alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
+            continue
         if tmp_constraint.pk == oli_constraint.pk:
             print("约束pk不一致")
+            alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
+            continue
         if tmp_constraint.fk == oli_constraint.fk:
             print("约束fk不一致")
-        oli_constraint_dist.pop(constraint_name)
+            alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
+            continue
     if len(oli_constraint_dist) > 0:
         print("线上索引多余，是否要删除")
+        if DROP_TABLE_CONSTRAINT == False:
+            for constraint_name in oli_constraint_dist.keys():
+                oli_constraint = oli_constraint_dist.get(constraint_name)
+                alter_table_drop_constraint(conn_online, oli_tablename, oli_constraint)
 
 
-
-def contrast_table_remarks(tmp_tablename,oli_tablename):
-    tmp_remark_dist = select_table_remarks(conn_tmp,tmp_tablename)
-    oli_remark_dist = select_table_remarks(conn_online, oli_tablename)
+# 对比表备注
+def contrast_table_remark(tmp_tablename, oli_tablename):
+    tmp_remark_dist = select_create_table_remark(conn_tmp, tmp_tablename)
+    oli_remark_dist = select_create_table_remark(conn_online, oli_tablename)
     for remark_name in tmp_remark_dist.keys():
         tmp_remark = tmp_remark_dist.get(remark_name)
-        oli_remark = oli_remark_dist.get(remark_name,False)
+        oli_remark = oli_remark_dist.get(remark_name, False)
         if oli_remark == False:
             print("备注不存在")
+            alter_table_add_remarks(conn_online, oli_tablename, tmp_remark)
             continue
+        oli_remark_dist.pop(remark_name)
         if tmp_remark.dist == oli_remark.dist:
             print("备注dist不一致")
-        oli_remark_dist.pop(remark_name)
+            alter_table_alter_remarks(conn_online, oli_tablename, tmp_remark)
+            continue
     if len(oli_remark_dist) > 0:
         print("线上备注多余，是否要删除")
+        if DROP_TABLE_REMARK == True:
+            for remark_name in oli_remark_dist.keys():
+                oli_remark = oli_remark_dist.get(remark_name)
+                alter_table_drop_remarks(conn_online, oli_tablename, oli_remark)
 
 
+# 创建表
+def create_table(tmp_tablename, oli_tablename):
+    tmp_column_dist = select_create_table_column(conn_tmp, tmp_tablename)
+    tmp_constraint_dist = select_create_table_constraint(conn_tmp, tmp_tablename)
+    tmp_remark_dist = select_create_table_remark(conn_tmp, tmp_tablename)
+    for column_name in tmp_column_dist.keys():
+        tmp_column = tmp_column_dist.get(column_name)
+        if tmp_column.default.find("nextval") > 0 :
+            tmp_column.default = update_sequence_name(tmp_column.default, tmp_tablename, oli_tablename)
+            tmp_column_dist.update(column_name, tmp_column)
+    create_table_dist(conn_online, oli_tablename, tmp_column_dist, tmp_constraint_dist, tmp_remark_dist)
 
 
-
-
+# 替换绑定序列名
+def update_sequence_name(column_default, tmp_tablename, oli_tablename):
+    return column_default.replace(tmp_tablename.split("_")[-1], oli_tablename.split("_")[-1])

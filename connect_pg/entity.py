@@ -66,7 +66,7 @@ class TableConstraint:
         return self.fk
 
 
-class TableRemarks:
+class TableRemark:
     def __init__(self, name=None, desc=None):
         self.name = name
         self.desc = desc
