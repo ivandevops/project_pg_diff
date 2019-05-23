@@ -1,5 +1,5 @@
 class TableColumn:
-    def __init__(self,name = None,type = None,varchar_len = None,double_len = None,collate = None,is_nullable = None,default = None):
+    def __init__(self,name = None, type = None, varchar_len = None, double_len = None, collate = None, is_nullable = None, default = None):
         self.name = name
         self.type = type
         self.varchar_len = varchar_len
@@ -8,31 +8,31 @@ class TableColumn:
         self.is_nullable = is_nullable
         self.default = default
 
-    @property
+    # @property
     def name(self):
         return self.name
 
-    @property
+    # @property
     def type(self):
         return self.type
 
-    @property
+    # @property
     def varchar_len(self):
         return self.varchar_len
 
-    @property
+    # @property
     def double_len(self):
         return self.double_len
 
-    @property
+    # @property
     def collate(self):
         return self.collate
 
-    @property
+    # @property
     def is_nullable(self):
         return self.is_nullable
 
-    @property
+    # @property
     def default(self):
         return self.default
 
