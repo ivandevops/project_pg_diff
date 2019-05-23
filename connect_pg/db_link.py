@@ -1,8 +1,8 @@
 import psycopg2
 import configparser
-import os
 
-def db_exe(conn,operate):
+
+def db_select(conn,operate):
     cur=conn.cursor()
     cur.execute(operate)
     rows=cur.fetchall()
@@ -10,14 +10,19 @@ def db_exe(conn,operate):
     cur.close()
     return rows
 
+def db_exe(conn,operate):
+    cur=conn.cursor()
+    cur.execute(operate)
+    conn.commit()
+    cur.close()
+
 def db_close(conn):
     conn.close()
     print("exit  success")
 
-def db_conn(db):                                                                            #注意配置文件需要不加引号
-    # root_dir = os.path.dirname(os.path.abspath('.'))                                        #获取上一层
+def db_conn(db):
     cf=configparser.ConfigParser()
-    cf.read("db.conf")
+    cf.read("pgconfig.txt")
     host = cf.get(db, "host")
     dbname=cf.get(db,"dbname")
     user=cf.get(db,"user")
@@ -26,9 +31,6 @@ def db_conn(db):                                                                
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     print("connect -----%s-----  success!!!"%dbname)
     return conn
-
-
-
 
 
 
