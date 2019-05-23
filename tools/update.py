@@ -2,6 +2,7 @@ import sys
 from tools.show_temp_list__dict import *
 sys.path.append("D:\\project_pg_diff\\connect_pg")
 
+
 def update_func(conn_db,conn_dev):
     log_func=[]
     dict_func_online=dict()
@@ -31,6 +32,7 @@ def update_func(conn_db,conn_dev):
             pass
         else:
             log_func.append(func_name+'此函数在模板库中不存在！')
+
 
 def update_view(conn_db,conn_dev):
     log_view=[]
@@ -62,11 +64,8 @@ def update_view(conn_db,conn_dev):
             log_view.append(view_name+'此视图在模板库中不存在')
 
 
-
-
-
-
-def update_trigger(service,conn_db,conn_dev):           #触发器名字相同，判断内容组件，，触发器对应的表不同直接新建，触发器对应的表相同，判断操作，操作不同，重建触发器，操作相同pass
+# 触发器名字相同，判断内容组件，，触发器对应的表不同直接新建，触发器对应的表相同，判断操作，操作不同，重建触发器，操作相同pass
+def update_trigger(service,conn_db,conn_dev):
     log_trigger=[]
     dict_trigger = show_create_trigger(conn_db)
     dict_trigger_online = dict()
@@ -108,8 +107,6 @@ def update_trigger(service,conn_db,conn_dev):           #触发器名字相同�
             pass
         else:
             log_trigger.append(triggername+'此触发器在模板库中不存在')
-
-
 
 
 def update_seq(service,conn_db,conn_dev):

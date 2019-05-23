@@ -7,7 +7,7 @@ port=5432
 
 
 [db_dev]
-dbname=botbrain_dev
+dbname=botbrain_test_target
 user=postgres
 password=MOPCd8YsNYwiZoUa
 host=192.168.11.102
