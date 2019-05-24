@@ -168,23 +168,25 @@ def update_table(conn_tmp, conn_online, service):
         contrast_oskey(conn_tmp, conn_online, "public", 0)
     elif service == 'private':
         contrast_custom(conn_tmp, conn_online, 3, 0, None, 1, 2)  # 知鱼用户
-        contrast_custom(conn_tmp, conn_online, 3, 0, None, 1, 2)  # max 用户
-    contrast_oskey(conn_tmp, conn_online)
+        # contrast_custom(conn_tmp, conn_online, 3, 0, None, 1, 2)  # max 用户
+    contrast_surplus_oskey(conn_tmp, conn_online)
 
 
 # 对比线上库是否，存在dataos中没有的oskey
-def contrast_oskey(conn_tmp, conn_online):
+def contrast_surplus_oskey(conn_tmp, conn_online):
     oskey_dataos_list = select_dataos_oskey(conn_online)
-    oskey_pgtables_list = select_pgtables_oskey()
+    oskey_pgtables_list = select_pgtables_oskey(conn_online)
     for oskey in oskey_dataos_list:
-        if oskey_pgtables_list.index(oskey) > 0:
-            oskey_pgtables_list.pop(oskey)
+        if oskey_pgtables_list.count(oskey) > 0:
+            oskey_pgtables_list.remove(oskey)
     if len(oskey_pgtables_list) > 0:
-        print("线上出现dataos表中没有oskey，是否要删除")
+        print("线上出现dataos表中，没有的oskey")
         if DROP_OSKEY == True:
+            print("开始执行删除")
             for oskey in oskey_pgtables_list:
                 tablename_pgtables_list = select_tablename(conn_online, oskey)
                 for tablename in tablename_pgtables_list:
+                    print("删除表--》" + tablename)
                     drop_table(conn_online, tablename)
 
 
@@ -192,7 +194,7 @@ def contrast_oskey(conn_tmp, conn_online):
 def contrast_custom(conn_tmp, conn_online, oli_type,oli_status,oli_create_time,tmp_is_private,tmp_custom_type):
     oskey_dataos_list = select_dataos_oskey(conn_online,oli_type,oli_status,oli_create_time)
     for oskey in oskey_dataos_list :
-        contrast_oskey(oskey, tmp_is_private, tmp_custom_type)
+        contrast_oskey(conn_tmp, conn_online, oskey, tmp_is_private, tmp_custom_type)
 
 
 # 根据提供的oskey，对每一个表进行对比
@@ -201,21 +203,20 @@ def contrast_oskey(conn_tmp, conn_online, oskey, is_private = None, custom_type 
     oli_tablename_list = select_tablename(conn_online, oskey)
     for tmp_tablename in tmp_tablename_list:
         if oskey != "public":
-            tablename_prefix = tmp_tablename[0:tmp_tablename.find(tmp_tablename.split("_")[-1])]
-            oli_tablename = tablename_prefix + oskey
+            oli_tablename = update_oskey_by_tmp_tablename(tmp_tablename, tmp_tablename, oskey)
         elif oskey == "public":
             oli_tablename = tmp_tablename
-        if oli_tablename_list.index(oli_tablename) > 0:
+        if oli_tablename_list.count(oli_tablename) > 0:
             contrast_table(conn_tmp, conn_online, tmp_tablename, oli_tablename)
         else:
             print("表不存在，新建表")
-            create_table(tmp_tablename, oli_tablename)
+            create_table(conn_tmp, conn_online, tmp_tablename, oli_tablename)
             continue
-        oli_tablename_list.pop(oli_tablename)
+        oli_tablename_list.remove(oli_tablename)
     if len(oli_tablename_list) > 0:
+        print("线上表多余，是否要删除")
         if DROP_TABLE == True:
-            print("线上表多余，是否要删除")
-            for oli_tablename in oli_tablename:
+            for oli_tablename in oli_tablename_list:
                 drop_table(conn_online, oli_tablename)
 
 
@@ -260,7 +261,7 @@ def contrast_table_column(conn_tmp, conn_online, tmp_tablename, oli_tablename):
             continue
         if tmp_column.default != oli_column.default:
             if tmp_column.default.find("nextval") > 0 :
-                tmp_default = update_sequence_name(tmp_column.default, tmp_tablename, oli_tablename)
+                tmp_default = update_oskey_by_tablename(tmp_column.default, tmp_tablename, oli_tablename)
                 if tmp_default != oli_column.default:
                     print("字段default不一致")
                     alter_table_alter_column(conn_online, oli_tablename, tmp_column)
@@ -282,31 +283,32 @@ def contrast_table_constraint(conn_tmp, conn_online, tmp_tablename, oli_tablenam
     oli_constraint_dict = select_create_table_constraint(conn_online, oli_tablename)
     for constraint_name in tmp_constraint_dict.keys():
         tmp_constraint = tmp_constraint_dict.get(constraint_name)
-        oli_constraint = oli_constraint_dict.get(constraint_name, False)
+        oli_constraint = oli_constraint_dict.get(update_oskey_by_tablename(constraint_name, tmp_tablename, oli_tablename), False)
         if oli_constraint == False:
             print("约束不存在")
+            tmp_constraint.name = update_oskey_by_tablename(tmp_constraint.name, tmp_tablename, oli_tablename)
             alter_table_add_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
-        oli_constraint_dict.pop(constraint_name)
-        if tmp_constraint.ck == oli_constraint.ck:
+        oli_constraint_dict.pop(oli_constraint.name)
+        if tmp_constraint.ck != oli_constraint.ck:
             print("约束ck不一致")
             alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
-        if tmp_constraint.uk == oli_constraint.uk:
+        if tmp_constraint.uk != oli_constraint.uk:
             print("约束uk不一致")
             alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
-        if tmp_constraint.pk == oli_constraint.pk:
+        if tmp_constraint.pk != oli_constraint.pk:
             print("约束pk不一致")
             alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
-        if tmp_constraint.fk == oli_constraint.fk:
+        if tmp_constraint.fk != oli_constraint.fk:
             print("约束fk不一致")
             alter_table_alter_constraint(conn_online, oli_tablename, tmp_constraint)
             continue
     if len(oli_constraint_dict) > 0:
         print("线上索引多余，是否要删除")
-        if DROP_TABLE_CONSTRAINT == False:
+        if DROP_TABLE_CONSTRAINT == True:
             for constraint_name in oli_constraint_dict.keys():
                 oli_constraint = oli_constraint_dict.get(constraint_name)
                 alter_table_drop_constraint(conn_online, oli_tablename, oli_constraint)
@@ -324,7 +326,7 @@ def contrast_table_remark(conn_tmp, conn_online, tmp_tablename, oli_tablename):
             alter_table_add_remarks(conn_online, oli_tablename, tmp_remark)
             continue
         oli_remark_dict.pop(remark_name)
-        if tmp_remark.dict == oli_remark.dict:
+        if tmp_remark.desc != oli_remark.desc:
             print("备注dict不一致")
             alter_table_alter_remarks(conn_online, oli_tablename, tmp_remark)
             continue
@@ -343,12 +345,24 @@ def create_table(conn_tmp, conn_online, tmp_tablename, oli_tablename):
     tmp_remark_dict = select_create_table_remark(conn_tmp, tmp_tablename)
     for column_name in tmp_column_dict.keys():
         tmp_column = tmp_column_dict.get(column_name)
-        if tmp_column.default.find("nextval") > 0 :
-            tmp_column.default = update_sequence_name(tmp_column.default, tmp_tablename, oli_tablename)
-            tmp_column_dict.update(column_name, tmp_column)
+        if tmp_column.default != None and tmp_column.default.find("nextval") > 0 :
+            tmp_column.default = update_oskey_by_tablename(tmp_column.default, tmp_tablename, oli_tablename)
+            tmp_column_dict.update({column_name: tmp_column})
+    for constraint_name in tmp_constraint_dict.keys():
+        tmp_constraint = tmp_constraint_dict.get(constraint_name)
+        tmp_constraint.name = update_oskey_by_tablename(tmp_constraint.name, tmp_tablename, oli_tablename)
+        tmp_constraint_dict.update({constraint_name: tmp_constraint})
     create_table_dict(conn_online, oli_tablename, tmp_column_dict, tmp_constraint_dict, tmp_remark_dict)
 
 
-# 替换绑定序列名
-def update_sequence_name(column_default, tmp_tablename, oli_tablename):
-    return column_default.replace(tmp_tablename.split("_")[-1], oli_tablename.split("_")[-1])
+# 替换对象绑定的oskey序列名
+def update_oskey(obj_name, tmp_oskey, oli_oskey):
+    return obj_name.replace(tmp_oskey, oli_oskey)
+
+
+def update_oskey_by_tablename(obj_name, tmp_tablename, oli_tablename):
+    return update_oskey(obj_name, tmp_tablename.split("_")[-1], oli_tablename.split("_")[-1])
+
+def update_oskey_by_tmp_tablename(obj_name, tmp_tablename, oskey):
+    return update_oskey(obj_name, tmp_tablename.split("_")[-1], oskey)
+
