@@ -221,7 +221,7 @@ def contrast_oskey(conn_tmp, conn_online, oskey, is_private = None, custom_type 
 
 
 # 对比单表
-def contrast_table(conn_tmp, conn_online, tmp_tablename, oli_tablename):
+def contrast_table(conn_tmp, conn_online, tmp_tablename, oli_tablename):                        #传入连接。传入线上和模板的表名进行对比
     contrast_table_column(conn_tmp, conn_online, tmp_tablename, oli_tablename)
     contrast_table_constraint(conn_tmp, conn_online, tmp_tablename, oli_tablename)
     contrast_table_remark(conn_tmp, conn_online, tmp_tablename, oli_tablename)

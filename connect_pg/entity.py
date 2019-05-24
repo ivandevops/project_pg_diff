@@ -66,5 +66,36 @@ class TableRemark:
         return self.desc
 
 
+class Sequence:
+    def __init__(self, name=None, max = None , min=None, now=None , increment=None, start=None ):
+        self.name = name
+        self.max = max
+        self.min = min
+        self.now = now
+        self.increment = increment
+        self.start = start
+
+    def name(self):
+        return self.name
+
+    def max(self):
+        return self.max
+
+    def min(self):
+        return self.min
+
+    def now(self):
+        return self.now
+
+    def increment(self):
+        return self.increment
+
+    def start(self):
+        return self.start
+
+
+
+
+
 
 

@@ -2,12 +2,12 @@ from connect_pg.db_link import *
 from connect_pg.entity import *
 
 
-def select(conn, sql):
+def select(conn, sql):                      #执行创建语句
     rows = db_exe(conn , sql )
     return rows
 
 
-# 查询database_info表中不同状态的用户
+# 查询database_info表中不同状态的用户，每个类型的用户返回一个列表
 def select_object(conn, is_private = None, object_type = None, custom_type = None):
     sql = "SELECT object_name FROM fd_database_info WHERE"
     if is_private != None :
@@ -96,7 +96,7 @@ def splicing_create_table_sql(tablename, column_entity_dict, constraint_entity_d
     return sql
 
 
-# 查询创建语句
+# 查询创建语句： 传入连接和表名 返回
 def select_create_table_sql(conn, tablename):
     column_entity_dict = select_create_table_column(conn, tablename)
     constraint_entity_dict = select_create_table_constraint(conn, tablename)
@@ -104,6 +104,7 @@ def select_create_table_sql(conn, tablename):
     return splicing_create_table_sql(tablename, column_entity_dict, constraint_entity_dict, remark_entity_dict)
 
 
+# 传入连接和表名  返回字典   字段、约束、注释
 def select_create_table_dict(conn, tablename):
     table_dict = dict()
     table_dict.update({"column":select_create_table_column(conn, tablename)})
@@ -112,6 +113,7 @@ def select_create_table_dict(conn, tablename):
     return table_dict
 
 
+# 传入连接和表名，返回字典  字段名：字段实体
 def select_create_table_column(conn, table_name):
     sql = "SELECT column_name AS c_name,udt_name AS c_type,CASE WHEN character_maximum_length > 0 THEN '(' || character_maximum_length || ')' END AS c_varchar_len, CASE WHEN numeric_precision > 0 AND numeric_scale > 0 THEN '(' || numeric_precision || ', ' || numeric_scale || ')' END AS c_double_len,CASE WHEN POSITION('text' in udt_name)=1 OR POSITION('varchar' in udt_name)=1  THEN ' COLLATE \"pg_catalog\".\"default\"' END AS c_collate, CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' END AS c_is_nullable, CASE WHEN column_default IS NOT NULL THEN ' DEFAULT' END || ' ' || column_default AS c_default FROM information_schema.columns WHERE table_name = '" + table_name + "' AND table_schema='public' ORDER BY ordinal_position"
     result_table = db_select( conn , sql )
@@ -121,7 +123,7 @@ def select_create_table_column(conn, table_name):
         dict_table.update({column.name:column})
     return dict_table
 
-
+# 传入连接和表名，返回字典  约束名：约束值
 def select_create_table_constraint(conn, table_name):
     sql = "SELECT conname , CASE WHEN contype='c' THEN ' CHECK(\"'|| consrc ||'\")' END  AS ck , CASE WHEN contype='u' THEN  ' UNIQUE(\"'|| ( SELECT REPLACE(findattname('public','" + table_name + "','u'),',','\",\"') ) ||'\")' END AS uk , CASE WHEN contype='p' THEN ' PRIMARY KEY (\"'||  ( SELECT REPLACE(findattname('public','" + table_name + "','p'),',','\",\"') ) ||'\")' END  AS pk, CASE WHEN contype='f' THEN ' FOREIGN KEY(\"'|| ( SELECT findattname('public','" + table_name + "','u') ) ||'\") REFERENCES '|| (SELECT p.relname FROM pg_class p WHERE p.oid=c.confrelid )  || '('|| ( SELECT findattname('public','" + table_name + "','u') ) ||')' END AS fk FROM pg_constraint c  WHERE contype in('u','c','f','p') AND conrelid=( SELECT oid  FROM pg_class  WHERE relname='" + table_name + "' AND relnamespace =( SELECT oid FROM pg_namespace WHERE nspname='public' ) )	ORDER BY conname"
     result_table =  db_select(conn, sql)
@@ -132,6 +134,7 @@ def select_create_table_constraint(conn, table_name):
     return dict_table
 
 
+# 传入连接和表名，返回字典  注释名：注释内容
 def select_create_table_remark(conn, table_name):
     sql = "SELECT a.attname , d.description FROM pg_class c JOIN pg_description d ON c.oid=d.objoid JOIN pg_attribute a ON c.oid = a.attrelid  WHERE c.relname='" + table_name + "' AND a.attnum = d.objsubid ORDER BY a.attname"
     result_table =  db_select(conn, sql)
@@ -142,11 +145,12 @@ def select_create_table_remark(conn, table_name):
     return dict_table
 
 
-# 表处理
+# 表处理：传入连接和创建表的语句，进行创建表
 def create_table_sql(conn, create_table_sql):
     db_exe(conn, create_table_sql)
 
 
+#
 def create_table_dict(conn, tablename, create_table_dict):
     return create_table_sql(conn, splicing_create_table_sql(tablename, create_table_dict.get("column"), create_table_dict.get("constraint"), create_table_dict.get("remark")))
 
@@ -189,9 +193,8 @@ def alter_table_add_constraint(conn, tablename, constraint_entity):
 
 # 注意返回值
 def alter_table_alter_constraint(conn, tablename, constraint_entity):
-    alter_table_add_constraint(conn, tablename, constraint_entity)
     alter_table_drop_constraint(conn, tablename, constraint_entity)
-    return
+    alter_table_add_constraint(conn, tablename, constraint_entity)
 
 
 def alter_table_drop_constraint(conn, tablename, constraint_entity):
@@ -216,3 +219,34 @@ def alter_table_drop_remarks(conn, tablename, remark_entity):
 
 def judge_str(in_str = None):
     return "" if in_str is None else in_str
+
+
+def select_create_sequence(conn,sequence_name):
+    sql = "SELECT '" + sequence_name + "',max_value,min_value,cache_value,increment_by,start_value FROM \"" + sequence_name + "\" "
+    result_table = db_select(conn,sql)
+    dict_seq = dict()
+    for row in result_table:
+        sequence = Sequence(row[0],row[1],row[2],row[3],row[4],row[5])
+        dict_seq.update({sequence_name:sequence})
+    return dict_seq
+
+
+def create_sequence_sql(conn, create_sequence_sql):
+    db_exe(conn, create_sequence_sql)
+
+
+def create_sequence_entity(conn, sequence_entity):
+    create_sequence_sql(conn, splicing_create_sequence_sql(sequence_entity))
+
+
+def splicing_create_sequence_sql(sequence_entity):
+    sql = "CREATE SEQUENCE \"" + sequence_entity.name + "\" INCREMENT " + sequence_entity.increment + " MINVALUE " + sequence_entity.min + " MAXVLUE " + sequence_entity.max + " START " + sequence_entity.start + " CACHE " + sequence_entity.now
+    return sql
+
+
+
+
+
+
+
+
