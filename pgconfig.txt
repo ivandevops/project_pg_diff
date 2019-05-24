@@ -1,4 +1,4 @@
-[db]
+[db_template]
 dbname=botbrain_template
 user=postgres
 password=MOPCd8YsNYwiZoUa
@@ -6,8 +6,8 @@ host=192.168.11.102
 port=5432
 
 
-[db_dev]
-dbname=botbrain_test_target
+[db_online]
+dbname=botbrain_dev
 user=postgres
 password=MOPCd8YsNYwiZoUa
 host=192.168.11.102
