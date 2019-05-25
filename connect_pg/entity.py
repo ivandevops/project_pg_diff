@@ -67,7 +67,7 @@ class TableRemark:
 
 
 class Sequence:
-    def __init__(self, name=None, max = None , min=None, now=None , increment=None, start=None ):
+    def __init__(self, name = None, max = None , min = None, now = None , increment = None, start = None ):
         self.name = name
         self.max = max
         self.min = min
@@ -93,6 +93,11 @@ class Sequence:
     def start(self):
         return self.start
 
+
+class index:
+    def __init__(self, index_name = None, fetch_table_name = None):
+        self.name = index_name
+        self.fetch_table_name = fetch_table_name
 
 
 

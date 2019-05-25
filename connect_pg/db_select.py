@@ -112,7 +112,8 @@ def select_create_table_dict(conn, tablename):
     table_dict.update({"remark":select_create_table_remark(conn, tablename)})
     return table_dict
 
-
+def select_create_index_dict(conn, indexname):
+    sql =
 # 传入连接和表名，返回字典  字段名：字段实体
 def select_create_table_column(conn, table_name):
     sql = "SELECT column_name AS c_name,udt_name AS c_type,CASE WHEN character_maximum_length > 0 THEN '(' || character_maximum_length || ')' END AS c_varchar_len, CASE WHEN numeric_precision > 0 AND numeric_scale > 0 THEN '(' || numeric_precision || ', ' || numeric_scale || ')' END AS c_double_len,CASE WHEN POSITION('text' in udt_name)=1 OR POSITION('varchar' in udt_name)=1  THEN ' COLLATE \"pg_catalog\".\"default\"' END AS c_collate, CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' END AS c_is_nullable, CASE WHEN column_default IS NOT NULL THEN ' DEFAULT' END || ' ' || column_default AS c_default FROM information_schema.columns WHERE table_name = '" + table_name + "' AND table_schema='public' ORDER BY ordinal_position"
@@ -242,10 +243,6 @@ def create_sequence_entity(conn, sequence_entity):
 def splicing_create_sequence_sql(sequence_entity):
     sql = "CREATE SEQUENCE \"" + sequence_entity.name + "\" INCREMENT " + sequence_entity.increment + " MINVALUE " + sequence_entity.min + " MAXVLUE " + sequence_entity.max + " START " + sequence_entity.start + " CACHE " + sequence_entity.now
     return sql
-
-
-
-
 
 
 
