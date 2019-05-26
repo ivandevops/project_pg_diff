@@ -13,7 +13,7 @@ def main():
         for name,value in opts:
             if name == '-a':
                 os_key = 'public'
-                new_add_user(conn_tmp, conn_online, os_key,)
+                new_add_user(conn_tmp, conn_online, os_key)
             if name == '-n':
                 custom_type = input("please input custom_type:")
                 new_add_user(conn_tmp, conn_online, value, custom_type)
