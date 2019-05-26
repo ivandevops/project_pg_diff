@@ -1,5 +1,4 @@
 from select_service.service import *
-from tools.create import *
 import sys,getopt
 from tools.show_temp_list__dict import *
 sys.path.append("D:\\project_pg_diff\\connect_pg")
@@ -7,7 +6,7 @@ sys.path.append("D:\\project_pg_diff\\connect_pg")
 
 def main():
     try:
-        opts,args=getopt.getopt(sys.argv[1:], 'a:n:u', )
+        opts,args=getopt.getopt(sys.argv[1:], 'a:n:u')
         conn_tmp=db_conn('db_template')
         conn_online=db_conn('db_online')
         for name,value in opts:
@@ -31,3 +30,4 @@ if __name__ == '__main__':
         main()
 
 
+#程前
