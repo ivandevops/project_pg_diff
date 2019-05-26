@@ -6,18 +6,23 @@ sys.path.append("D:\\project_pg_diff\\connect_pg")
 
 
 def create(conn_tmp, conn_oli, tmp_tablename, oskey):
-    oskey_tmp = tmp_tablename.split['_'][-1]
+    if oskey != 'public':
+        oskey_tmp = tmp_tablename.split['_'][-1]
     column_entity_dict = select_table_column_dict(conn_tmp, conn_oli, tmp_tablename, oskey)
     constraint_entity_dict = select_table_constraint_dict(conn_tmp,tmp_tablename,oskey)
     tmp_remark_dict = select_create_table_remark(conn_tmp, tmp_tablename)
     if create_table_dict(conn_oli, tmp_tablename, column_entity_dict, constraint_entity_dict, tmp_remark_dict):
-        if create_index(conn_tmp,  conn_oli, oskey_tmp, oskey):
-            if create_trigger(conn_tmp, conn_oli, oskey_tmp, oskey):
-                print("create success!!!")
+        create_index(conn_tmp, conn_oli, oskey_tmp, oskey)
+        print(tmp_tablename+' create success(include sequence and constraint and remark!)')
 
 
-
-
+def create_user(conn_tmp, conn_oli, oskey, is_private=None, custom_type=None):
+    tmp_table_list = select_object(conn_tmp, is_private, 3, custom_type)
+    if create_func(conn_tmp,conn_oli):
+        for table_name in tmp_table_list:
+            create(conn_tmp,conn_oli,table_name,oskey)
+    if oskey != 'public':
+        create_view(conn_tmp, conn_oli)
 
 
 def select_table_column_dict(conn_tmp, conn_oli, tmp_tablename, oli_oskey):
@@ -31,8 +36,8 @@ def select_table_column_dict(conn_tmp, conn_oli, tmp_tablename, oli_oskey):
                 tmp_sequence_entity.name = update_oskey_by_tmp_tablename(tmp_sequence_name, tmp_tablename, oli_oskey)
                 tmp_column.default = update_oskey_by_tmp_tablename(tmp_column.default,tmp_tablename,oli_oskey)
                 tmp_column_dict.update({column_name: tmp_column})
-            create_sequence_entity(conn_oli, tmp_sequence_entity)                   # 创建序列的操作
-    return tmp_column_dict                                                          # 返回字段的实体
+            create_sequence_entity(conn_oli, tmp_sequence_entity)
+    return tmp_column_dict
 
 
 
@@ -83,7 +88,21 @@ def create_trigger(conn_tmp, conn_oli, oskey_tmp, oli_oskey):
 
 
 
+def create_view(conn_tmp, conn_oli):
+    dict_view = show_create_view(conn_tmp)
+    view_list = select_object(conn_tmp, object_type=6)
+    for view in view_list:
+        db_exe(conn_oli,dict_view[view])
+        print('视图 ' + view + 'create success！')
+    return True
 
 
 
 
+def create_func(conn_tmp, conn_oli):
+    dict_func = show_create_func(conn_tmp)
+    func_list = select_object(conn_tmp, object_type=1)
+    for func in func_list:
+        db_exe(conn_oli, dict_func[func])
+        print('函数 ' + func + 'create success! ')
+    return True

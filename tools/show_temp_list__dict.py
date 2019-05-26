@@ -1,41 +1,6 @@
 from connect_pg.db_link import *
-S_fuc = []
-S_public_seq = []
-S_public_table = []
-S_public_index = []
-S_public_trigger = []
-S_private_seq = []
-S_private_table = []
-S_private_index = []
-S_private_trigger = []
-S_view = []
 
 
-def judge(conn):                                                                #对不同的类型的对象做标记-------这个函数仅仅用于扫描模板库
-    rows=db_select(conn=conn,operate="SELECT is_private,object_type,object_name FROM fd_database_info;")
-    for row in rows:
-        if row[1] == 1:             #函数
-            S_fuc.append(row[2])
-        if row[0] == 0:              #公有对象
-             if row[1] == 2:        #序列
-                S_public_seq.append(row[2])
-             if row[1] == 3:        #表
-                S_public_table.append(row[2])
-             if row[1] == 4:        #索引
-                S_public_index.append(row[2])
-             if row[1] == 5:        #触发器
-                S_public_trigger.append(row[2])
-        if row[0] == 1:
-             if row[1] == 2:        #序列
-                S_private_seq.append(row[2])
-             if row[1] == 3:        #表
-                S_private_table.append(row[2])
-             if row[1] == 4:        #索引
-                S_private_index.append(row[2])
-             if row[1] == 5:        #触发器
-                S_private_trigger.append(row[2])
-        if row[1] == 6:             #视图
-            S_view.append(row[2])
 
 
 
@@ -52,17 +17,6 @@ def show_create_func(conn):
     return dict_func
 
 
-def show_create_table(conn):
-    rows=db_select(conn=conn,operate="SELECT object_name FROM fd_database_info where object_type=3;")
-    dict_table=dict()
-    for row in rows:
-        dict_table.setdefault(row[0],0)         #字典存储表名
-    for tablename in dict_table.keys():
-        str_select = "select show_create_table( )".split()[0] + ' ' + "select show_create_table( )".split()[
-            1] + " 'public' " + "," + "'" + tablename + "'" + "select show_create_table( )".split()[2]
-        rows=db_select(conn=conn,operate=str_select)
-        dict_table.update({tablename: rows[0][0]})          #key存在更新，key不存在添加新的,添加创建语句形成字典
-    return dict_table
 
 
 

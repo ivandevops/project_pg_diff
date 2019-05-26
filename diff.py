@@ -1,5 +1,5 @@
 from select_service.service import *
-from tools.create_user import *
+from tools.create import *
 import sys,getopt
 from tools.show_temp_list__dict import *
 sys.path.append("D:\\project_pg_diff\\connect_pg")
@@ -7,16 +7,16 @@ sys.path.append("D:\\project_pg_diff\\connect_pg")
 
 def main():
     try:
-        opts,args=getopt.getopt(sys.argv[1:],'a:n:u')
+        opts,args=getopt.getopt(sys.argv[1:], 'a:n:u', )
         conn_tmp=db_conn('db_template')
         conn_online=db_conn('db_online')
         for name,value in opts:
             if name == '-a':
-                judge(conn=conn_tmp)
-                add(value,conn_db=conn_tmp,conn_dev=conn_online)                     #增加私有组件
+                os_key = 'public'
+                new_add_user(conn_tmp, conn_online, os_key,)
             if name == '-n':
-                judge(conn_tmp)
-                new(value,conn_1=conn_tmp,conn_2=conn_online)
+                custom_type = input("please input custom_type:")
+                new_add_user(conn_tmp, conn_online, value, custom_type)
             if name == '-u':
                 online_update(conn_tmp, conn_online)
         db_close(conn_tmp)
