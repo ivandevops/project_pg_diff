@@ -1,4 +1,4 @@
-[db_template]
+[db_template1]
 dbname=botbrain_template
 user=postgres
 password=MOPCd8YsNYwiZoUa
@@ -6,9 +6,25 @@ host=192.168.11.102
 port=5432
 
 
-[db_online]
+[db_online1]
 dbname=botbrain_dev
 user=postgres
 password=MOPCd8YsNYwiZoUa
 host=192.168.11.102
+port=5432
+
+
+[db_template]
+dbname=botbrain_template
+user=firedata
+password=fdQnv8Q9WbXjqr4z
+host=10.10.23.161
+port=5432
+
+
+[db_online]
+dbname=botbrain_template_test
+user=firedata
+password=fdQnv8Q9WbXjqr4z
+host=10.10.23.161
 port=5432

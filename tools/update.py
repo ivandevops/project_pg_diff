@@ -354,7 +354,7 @@ def create_table(conn_tmp, conn_online, tmp_tablename, oli_tablename):
 
 # 替换对象绑定的oskey序列名
 def update_oskey(obj_name, tmp_oskey, oli_oskey):
-    return obj_name.replace(tmp_oskey, oli_oskey)
+    return obj_name.replace(tmp_oskey.upper(), oli_oskey.upper()).replace(tmp_oskey.lower(), oli_oskey.lower())
 
 
 def update_oskey_by_tablename(obj_name, tmp_tablename, oli_tablename):

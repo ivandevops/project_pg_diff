@@ -10,8 +10,7 @@ def show_create_func(conn):
     for row in rows:
         dict_func.setdefault(row[0],0)          #存储函数名
     for funcname in dict_func.keys():
-        str_select = "select show_create_funcation( )".split()[0] + ' ' + "select show_create_funcation( )".split()[
-            1] + "'" + funcname + "'" + "select show_create_funcation( )".split()[2]
+        str_select = "select pg_get_functiondef(to_regproc('"+funcname+"'))"
         rows=db_select(conn=conn,operate=str_select)
         dict_func.update({funcname: rows[0][0]})
     return dict_func

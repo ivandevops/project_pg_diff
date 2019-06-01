@@ -90,9 +90,9 @@ def splicing_create_table_sql(tablename, column_entity_dict, constraint_entity_d
         sql = sql.replace(",);", ");")
     while sql.find("  ") > 0:
         sql = sql.replace("  ", " ")
-    for remark_name in remark_entity_dict:
-        remark_entity = constraint_entity_dict.get(remark_name)
-        sql = sql + "COMMENT ON COLUMN " + tablename + "." + judge_str(remark_entity.name) + "IS '"+ judge_str(remark_entity.dict) + "';"
+    for remark_name in remark_entity_dict.keys():
+        remark_entity = remark_entity_dict[remark_name]
+        sql = sql + "COMMENT ON COLUMN " + tablename + "." + judge_str(remark_entity.name) + " IS '"+ judge_str(remark_entity.desc) + "';"
     return sql
 
 
@@ -112,8 +112,6 @@ def select_create_table_dict(conn, tablename):
     table_dict.update({"remark":select_create_table_remark(conn, tablename)})
     return table_dict
 
-def select_create_index_dict(conn, indexname):
-    sql =
 # 传入连接和表名，返回字典  字段名：字段实体
 def select_create_table_column(conn, table_name):
     sql = "SELECT column_name AS c_name,udt_name AS c_type,CASE WHEN character_maximum_length > 0 THEN '(' || character_maximum_length || ')' END AS c_varchar_len, CASE WHEN numeric_precision > 0 AND numeric_scale > 0 THEN '(' || numeric_precision || ', ' || numeric_scale || ')' END AS c_double_len,CASE WHEN POSITION('text' in udt_name)=1 OR POSITION('varchar' in udt_name)=1  THEN ' COLLATE \"pg_catalog\".\"default\"' END AS c_collate, CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' END AS c_is_nullable, CASE WHEN column_default IS NOT NULL THEN ' DEFAULT' END || ' ' || column_default AS c_default FROM information_schema.columns WHERE table_name = '" + table_name + "' AND table_schema='public' ORDER BY ordinal_position"
@@ -147,17 +145,18 @@ def select_create_table_remark(conn, table_name):
 
 
 # 表处理：传入连接和创建表的语句，进行创建表
-def create_table_sql(conn, create_table_sql):
+def create_table_sql(conn, tablename, create_table_sql):
     db_exe(conn, create_table_sql)
+    return True
 
 
 #
-def create_table_dict(conn, tablename, create_table_dict):
-    return create_table_sql(conn, splicing_create_table_sql(tablename, create_table_dict.get("column"), create_table_dict.get("constraint"), create_table_dict.get("remark")))
+# def create_table_dict(conn,  create_table_dict):
+#     return create_table_sql(conn, splicing_create_table_sql(tablename, create_table_dict.get("column"), create_table_dict.get("constraint"), create_table_dict.get("remark")))
 
 
 def create_table_dict(conn, tablename, column_entity_dict, constraint_entity_dict, remark_entity_dict):
-    return create_table_sql(conn, splicing_create_table_sql(tablename, column_entity_dict, constraint_entity_dict, remark_entity_dict))
+    return create_table_sql(conn, tablename, splicing_create_table_sql(tablename, column_entity_dict, constraint_entity_dict, remark_entity_dict))
 
 
 def drop_table(conn, tablename):
@@ -241,9 +240,15 @@ def create_sequence_entity(conn, sequence_entity):
 
 
 def splicing_create_sequence_sql(sequence_entity):
-    sql = "CREATE SEQUENCE \"" + sequence_entity.name + "\" INCREMENT " + sequence_entity.increment + " MINVALUE " + sequence_entity.min + " MAXVLUE " + sequence_entity.max + " START " + sequence_entity.start + " CACHE " + sequence_entity.now
+    sql = "CREATE SEQUENCE \"" + str(sequence_entity.name) + "\"" +'\n' +" INCREMENT " + str(sequence_entity.increment) + " MINVALUE " + str(sequence_entity.min) + " MAXVALUE " + str(sequence_entity.max) + " START " + str(sequence_entity.start) + " CACHE " + str(sequence_entity.now)
     return sql
 
 
 
-
+#
+# CREATE SEQUENCE "public"."fd_consultation_id_seq"
+# INCREMENT 1
+# MINVALUE  1
+# MAXVALUE 9223372036854775807
+# START 1
+# CACHE 1;
